@@ -149,6 +149,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="transcode.cpp" />
+    <ClCompile Include="transcode_with_filter.cpp" />
+    <ClCompile Include="transcode_without_filter.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="transcode_without_filter.h" />
+    <ClInclude Include="transcode_with_filter.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
