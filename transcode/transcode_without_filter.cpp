@@ -19,15 +19,6 @@ extern "C"
 
 static AVFormatContext* ifmt_ctx;
 static AVFormatContext* ofmt_ctx;
-typedef struct FilteringContext {
-    AVFilterContext* buffersink_ctx;
-    AVFilterContext* buffersrc_ctx;
-    AVFilterGraph* filter_graph;
-
-    AVPacket* enc_pkt;
-    AVFrame* filtered_frame;
-} FilteringContext;
-static FilteringContext* filter_ctx;
 
 typedef struct StreamContext {
     AVCodecContext* dec_ctx;
@@ -310,8 +301,6 @@ int transcode_without_filter()
         goto end;
     if ((ret = open_output_file(output)) < 0)
         goto end;
-    /*if ((ret = init_filters()) < 0)
-        goto end;*/
     if (!(packet = av_packet_alloc()))
         goto end;
 
@@ -350,8 +339,11 @@ int transcode_without_filter()
                 av_frame_unref(frame);
             }
         }
+
+        av_packet_unref(packet);
     }
 
+    /* flush decoders, filters and encoders */
     for (i = 0; i < ifmt_ctx->nb_streams; i++) {
         if (stream_ctx[i].enc_ctx) {
             ret = encode_and_write_frame(stream_ctx[i].enc_ctx, NULL, i);
@@ -363,6 +355,14 @@ int transcode_without_filter()
 end:
     av_frame_free(&frame);
     av_packet_free(&packet);
+    for (i = 0; i < ifmt_ctx->nb_streams; i++) {
+        avcodec_free_context(&stream_ctx[i].dec_ctx);
+        if (ofmt_ctx && ofmt_ctx->nb_streams > i && ofmt_ctx->streams[i] && stream_ctx[i].enc_ctx)
+            avcodec_free_context(&stream_ctx[i].enc_ctx);
+
+        av_frame_free(&stream_ctx[i].dec_frame);
+    }
+    av_free(stream_ctx);
     avformat_close_input(&ifmt_ctx);
     if (ofmt_ctx && !(ofmt_ctx->oformat->flags & AVFMT_NOFILE)) {
         avio_closep(&ofmt_ctx->pb);

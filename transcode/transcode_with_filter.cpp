@@ -551,12 +551,6 @@ int transcode_with_filter()
     auto input = "e:\\03_work\\transcode\\qt.mov";
     auto output = "e:\\03_work\\transcode\\qt_with_filter.mp4";
 
-    ret = open_input_file(input);
-    ret = open_output_file(output);
-    ret = init_filters();
-    packet = av_packet_alloc();
-
-
     if ((ret = open_input_file(input)) < 0)
         goto end;
     if ((ret = open_output_file(output)) < 0)
