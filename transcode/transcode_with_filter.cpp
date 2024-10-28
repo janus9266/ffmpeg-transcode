@@ -520,7 +520,7 @@ static int filter_encode_write_frame(AVFrame* frame, unsigned int stream_index)
             break;
         }
 
-        filter->filtered_frame->time_base = av_buffersink_get_time_base(filter->buffersink_ctx);;
+        filter->filtered_frame->time_base = av_buffersink_get_time_base(filter->buffersink_ctx);
         filter->filtered_frame->pict_type = AV_PICTURE_TYPE_NONE;
         ret = encode_write_frame(stream_index, 0);
         av_frame_unref(filter->filtered_frame);
