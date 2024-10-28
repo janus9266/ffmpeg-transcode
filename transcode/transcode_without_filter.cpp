@@ -249,40 +249,43 @@ static int open_output_file(const char* filename)
     return 0;
 }
 
-static int encode_and_write_frame(AVCodecContext* enc_ctx, AVFrame* frame, unsigned int stream_index) {
+static int encode_and_write_frame(AVFrame* frame, unsigned int stream_index) {
+    StreamContext* stream = &stream_ctx[stream_index];
     AVPacket* enc_pkt = av_packet_alloc();
     int ret;
 
-    ret = avcodec_send_frame(enc_ctx, frame);
-    if (ret < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Error sending frame to encoder\n");
+    av_log(NULL, AV_LOG_INFO, "Encoding frame\n");
+    /* encode filtered frame */
+    av_packet_unref(enc_pkt);
+
+    if (frame && frame->pts != AV_NOPTS_VALUE)
+        frame->pts = av_rescale_q(frame->pts, frame->time_base, stream->enc_ctx->time_base);
+
+    ret = avcodec_send_frame(stream->enc_ctx, frame);
+
+    if (ret < 0)
         return ret;
-    }
 
     while (ret >= 0) {
-        ret = avcodec_receive_packet(enc_ctx, enc_pkt);
+        ret = avcodec_receive_packet(stream->enc_ctx, enc_pkt);
+
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
-            break;
-        else if (ret < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Error during encoding\n");
-            return ret;
-        }
+            return 0;
 
+        /* prepare packet for muxing */
         enc_pkt->stream_index = stream_index;
-        av_packet_rescale_ts(enc_pkt, enc_ctx->time_base, ofmt_ctx->streams[stream_index]->time_base);
-        av_log(NULL, AV_LOG_INFO, "Writing encoded frame\n");
-        ret = av_interleaved_write_frame(ofmt_ctx, enc_pkt);
+        av_packet_rescale_ts(enc_pkt,
+            stream->enc_ctx->time_base,
+            ofmt_ctx->streams[stream_index]->time_base);
 
-        if (ret < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Error writing encoded frame to output file: %s\n");
-            av_packet_unref(enc_pkt);
-            return ret;
-        }
+        av_log(NULL, AV_LOG_DEBUG, "Muxing frame\n");
+        /* mux encoded frame */
+        ret = av_interleaved_write_frame(ofmt_ctx, enc_pkt);
 
         av_packet_unref(enc_pkt);
     }
 
-    return ret == AVERROR(EAGAIN) ? 0 : ret;
+    return ret;
 }
 
 int transcode_without_filter()
@@ -328,8 +331,8 @@ int transcode_without_filter()
                     goto end;
                 }
 
-                frame->pts = av_rescale_q(frame->pts, stream->dec_ctx->time_base, stream->enc_ctx->time_base);
-                ret = encode_and_write_frame(stream->enc_ctx, frame, stream_index);
+                frame->time_base = ifmt_ctx->streams[stream_index]->time_base;
+                ret = encode_and_write_frame(frame, stream_index);
 
                 if (ret < 0) {
                     av_log(NULL, AV_LOG_ERROR, "Error encoding and writing frame\n");
@@ -346,7 +349,7 @@ int transcode_without_filter()
     /* flush decoders, filters and encoders */
     for (i = 0; i < ifmt_ctx->nb_streams; i++) {
         if (stream_ctx[i].enc_ctx) {
-            ret = encode_and_write_frame(stream_ctx[i].enc_ctx, NULL, i);
+            ret = encode_and_write_frame(NULL, i);
         }
     }
 
