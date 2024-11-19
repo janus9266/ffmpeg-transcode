@@ -156,12 +156,6 @@ static int open_output_file(const char* filename)
                     enc_ctx->sample_aspect_ratio = dec_ctx->sample_aspect_ratio;
                     /* take first format from list of supported formats */
                     enc_ctx->pix_fmt = dec_ctx->pix_fmt;
-                    //enc_ctx->color_range = AVCOL_RANGE_MPEG; // Set to TV range (16-235)
-                    //enc_ctx->colorspace = AVCOL_SPC_BT709; // Set to BT.709
-                    //enc_ctx->color_primaries = AVCOL_PRI_BT709; // Set color primaries to BT.709
-                    //enc_ctx->color_trc = AVCOL_TRC_BT709; // Set transfer characteristics to BT.709
-                    //enc_ctx->profile = FF_PROFILE_H264_HIGH; // Set profile to High
-                    //enc_ctx->level = 41;
                     /* video time_base can be set to whatever is handy and supported by encoder */
                     enc_ctx->framerate = dec_ctx->framerate;
                     enc_ctx->time_base = av_inv_q(dec_ctx->framerate);
@@ -256,9 +250,9 @@ static int encode_and_write_frame(AVFrame* frame, unsigned int stream_index) {
     av_log(NULL, AV_LOG_INFO, "Encoding frame\n");
     /* encode filtered frame */
 
-    /*if (frame && frame->pts != AV_NOPTS_VALUE) {
+    if (frame && frame->pts != AV_NOPTS_VALUE) {
         frame->pts = av_rescale_q(frame->pts, frame->time_base, stream->enc_ctx->time_base);
-    }*/
+    }
 
     ret = avcodec_send_frame(stream->enc_ctx, frame);
 
@@ -296,9 +290,6 @@ int transcode_dcm()
     unsigned int stream_index;
     unsigned int i;
 
-    //auto input = "e:\\03_work\\transcode\\qt.mov";
-    //auto output = "e:\\03_work\\transcode\\qt_without_filter.mp4";
-
     auto input = "e:\\03_work\\transcode\\mpeg-2.dcm";
     auto output = "e:\\03_work\\transcode\\mpeg-2_without_filter.mp4";
 
@@ -326,13 +317,14 @@ int transcode_dcm()
 
             while (ret >= 0) {
                 ret = avcodec_receive_frame(stream->dec_ctx, stream->dec_frame);
-                if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)\
+                if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
                     break;
                 if (ret < 0) {
                     av_log(NULL, AV_LOG_ERROR, "Error receiving frame from decoder: %s\n");
                     goto end;
                 }
 
+                stream->dec_frame->time_base = ifmt_ctx->streams[stream_index]->time_base;
                 stream->dec_frame->pts = stream->dec_frame->best_effort_timestamp;
                 ret = encode_and_write_frame(stream->dec_frame, stream_index);
 

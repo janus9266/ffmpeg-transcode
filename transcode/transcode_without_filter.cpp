@@ -156,12 +156,6 @@ static int open_output_file(const char* filename)
                     enc_ctx->sample_aspect_ratio = dec_ctx->sample_aspect_ratio;
                     /* take first format from list of supported formats */
                     enc_ctx->pix_fmt = dec_ctx->pix_fmt;
-                    enc_ctx->color_range = AVCOL_RANGE_MPEG; // Set to TV range (16-235)
-                    enc_ctx->colorspace = AVCOL_SPC_BT709; // Set to BT.709
-                    enc_ctx->color_primaries = AVCOL_PRI_BT709; // Set color primaries to BT.709
-                    enc_ctx->color_trc = AVCOL_TRC_BT709; // Set transfer characteristics to BT.709
-                    enc_ctx->profile = FF_PROFILE_H264_HIGH; // Set profile to High
-                    enc_ctx->level = 41;
                     /* video time_base can be set to whatever is handy and supported by encoder */
                     enc_ctx->framerate = dec_ctx->framerate;
                     enc_ctx->time_base = av_inv_q(dec_ctx->framerate);
@@ -298,8 +292,6 @@ int transcode_without_filter()
     auto input = "e:\\03_work\\transcode\\qt.mov";
     auto output = "e:\\03_work\\transcode\\qt_without_filter.mp4";
 
-    AVFrame* frame = av_frame_alloc();
-
     if ((ret = open_input_file(input)) < 0)
         goto end;
     if ((ret = open_output_file(output)) < 0)
@@ -323,23 +315,21 @@ int transcode_without_filter()
             if (ret < 0) continue;
 
             while (ret >= 0) {
-                ret = avcodec_receive_frame(stream->dec_ctx, frame);
-                if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)\
+                ret = avcodec_receive_frame(stream->dec_ctx, stream->dec_frame);
+                if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
                     break;
                 if (ret < 0) {
                     av_log(NULL, AV_LOG_ERROR, "Error receiving frame from decoder: %s\n");
                     goto end;
                 }
 
-                frame->time_base = ifmt_ctx->streams[stream_index]->time_base;
-                ret = encode_and_write_frame(frame, stream_index);
+                stream->dec_frame->time_base = ifmt_ctx->streams[stream_index]->time_base;
+                ret = encode_and_write_frame(stream->dec_frame, stream_index);
 
                 if (ret < 0) {
                     av_log(NULL, AV_LOG_ERROR, "Error encoding and writing frame\n");
                     goto end;
                 }
-
-                av_frame_unref(frame);
             }
         }
 
@@ -356,7 +346,6 @@ int transcode_without_filter()
     av_write_trailer(ofmt_ctx);
 
 end:
-    av_frame_free(&frame);
     av_packet_free(&packet);
     for (i = 0; i < ifmt_ctx->nb_streams; i++) {
         avcodec_free_context(&stream_ctx[i].dec_ctx);
