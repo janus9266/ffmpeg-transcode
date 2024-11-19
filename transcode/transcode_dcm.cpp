@@ -325,7 +325,6 @@ int transcode_dcm()
                 }
 
                 stream->dec_frame->time_base = ifmt_ctx->streams[stream_index]->time_base;
-                stream->dec_frame->pts = stream->dec_frame->best_effort_timestamp;
                 ret = encode_and_write_frame(stream->dec_frame, stream_index);
 
                 if (ret < 0) {
