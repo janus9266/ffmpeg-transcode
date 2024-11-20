@@ -28,6 +28,9 @@ typedef struct StreamContext {
 } StreamContext;
 static StreamContext* stream_ctx;
 
+static int frame_cnt = 0;
+static int startTime;
+
 static int open_input_file(const char* filename)
 {
     int ret;
@@ -38,6 +41,8 @@ static int open_input_file(const char* filename)
         av_log(NULL, AV_LOG_ERROR, "Cannot open input file\n");
         return ret;
     }
+
+    startTime = ifmt_ctx->start_time / 1000;
 
     if ((ret = avformat_find_stream_info(ifmt_ctx, NULL)) < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot find stream information\n");
@@ -242,13 +247,17 @@ static int open_output_file(const char* filename)
     return 0;
 }
 
+int64_t last_dts = AV_NOPTS_VALUE;
+
 static int encode_and_write_frame(AVFrame* frame, unsigned int stream_index) {
     StreamContext* stream = &stream_ctx[stream_index];
     AVPacket* enc_pkt = av_packet_alloc();
     int ret;
 
     av_log(NULL, AV_LOG_INFO, "Encoding frame\n");
+    frame_cnt++;
     /* encode filtered frame */
+    av_packet_unref(enc_pkt);
 
     if (frame && frame->pts != AV_NOPTS_VALUE) {
         frame->pts = av_rescale_q(frame->pts, frame->time_base, stream->enc_ctx->time_base);
@@ -263,7 +272,12 @@ static int encode_and_write_frame(AVFrame* frame, unsigned int stream_index) {
             return 0;
 
         /* prepare packet for muxing */
-        enc_pkt->stream_index = stream_index;
+        enc_pkt->stream_index = stream_index;        
+
+        if (frame && enc_pkt->dts != AV_NOPTS_VALUE) {
+            enc_pkt->dts = av_rescale_q(enc_pkt->dts, frame->time_base, stream->enc_ctx->time_base);
+        }
+
         enc_pkt->duration = stream->enc_ctx->time_base.den / stream->enc_ctx->time_base.num;
 
         av_packet_rescale_ts(enc_pkt,
@@ -276,8 +290,6 @@ static int encode_and_write_frame(AVFrame* frame, unsigned int stream_index) {
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Muxing frame\n");
         }
-
-        av_packet_unref(enc_pkt);
     }
 
     return ret;
