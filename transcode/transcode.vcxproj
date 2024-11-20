@@ -149,14 +149,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="transcode.cpp" />
-    <ClCompile Include="transcode_dcm.cpp" />
+    <ClCompile Include="transcode_dcm_without_filter.cpp" />
+    <ClCompile Include="transcode_dcm_with_filter.cpp" />
     <ClCompile Include="transcode_with_filter.cpp" />
     <ClCompile Include="transcode_without_filter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="transcode_dcm.h" />
-    <ClInclude Include="transcode_without_filter.h" />
-    <ClInclude Include="transcode_with_filter.h" />
+    <ClInclude Include="transcode.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

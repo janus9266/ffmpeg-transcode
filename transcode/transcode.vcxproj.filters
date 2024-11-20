@@ -24,12 +24,18 @@
     <ClCompile Include="transcode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="transcode_dcm_without_filter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="transcode_dcm_with_filter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="transcode_with_filter.h">
+    <ClInclude Include="transcode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="transcode_without_filter.h">
+    <ClInclude Include="transcode_dcm.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -28,9 +28,6 @@ typedef struct StreamContext {
 } StreamContext;
 static StreamContext* stream_ctx;
 
-static int frame_cnt = 0;
-static int startTime;
-
 static int open_input_file(const char* filename)
 {
     int ret;
@@ -41,8 +38,6 @@ static int open_input_file(const char* filename)
         av_log(NULL, AV_LOG_ERROR, "Cannot open input file\n");
         return ret;
     }
-
-    startTime = ifmt_ctx->start_time / 1000;
 
     if ((ret = avformat_find_stream_info(ifmt_ctx, NULL)) < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot find stream information\n");
@@ -161,6 +156,12 @@ static int open_output_file(const char* filename)
                     enc_ctx->sample_aspect_ratio = dec_ctx->sample_aspect_ratio;
                     /* take first format from list of supported formats */
                     enc_ctx->pix_fmt = dec_ctx->pix_fmt;
+                    enc_ctx->color_range = AVCOL_RANGE_MPEG; // Set to TV range (16-235)
+                    enc_ctx->colorspace = AVCOL_SPC_BT709; // Set to BT.709
+                    enc_ctx->color_primaries = AVCOL_PRI_BT709; // Set color primaries to BT.709
+                    enc_ctx->color_trc = AVCOL_TRC_BT709; // Set transfer characteristics to BT.709
+                    enc_ctx->profile = FF_PROFILE_H264_HIGH; // Set profile to High
+                    enc_ctx->level = 41;
                     /* video time_base can be set to whatever is handy and supported by encoder */
                     enc_ctx->framerate = dec_ctx->framerate;
                     enc_ctx->time_base = av_inv_q(dec_ctx->framerate);
@@ -247,15 +248,12 @@ static int open_output_file(const char* filename)
     return 0;
 }
 
-int64_t last_dts = AV_NOPTS_VALUE;
-
 static int encode_and_write_frame(AVFrame* frame, unsigned int stream_index) {
     StreamContext* stream = &stream_ctx[stream_index];
     AVPacket* enc_pkt = av_packet_alloc();
     int ret;
 
     av_log(NULL, AV_LOG_INFO, "Encoding frame\n");
-    frame_cnt++;
     /* encode filtered frame */
     av_packet_unref(enc_pkt);
 
@@ -295,7 +293,7 @@ static int encode_and_write_frame(AVFrame* frame, unsigned int stream_index) {
     return ret;
 }
 
-int transcode_dcm()
+int transcode_dcm_without_filter()
 {
     int ret;
     AVPacket* packet = NULL;

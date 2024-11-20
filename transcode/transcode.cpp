@@ -1,5 +1,4 @@
-#include "transcode_with_filter.h"
-#include "transcode_without_filter.h"
+#include "transcode.h"
 #include "transcode_dcm.h"
 
 int main(int argc, char** argv)
@@ -10,6 +9,9 @@ int main(int argc, char** argv)
 	// Without Filter
 	transcode_without_filter();
 
-	// DICOM Converter
-	transcode_dcm();
+	// DICOM Converter with Filter
+	transcode_dcm_with_filter();
+
+	// DICOM Converter without Filter
+	transcode_dcm_without_filter();
 }
