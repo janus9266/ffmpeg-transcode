@@ -5,10 +5,10 @@
 int main(int argc, char** argv)
 {
 	// With Filter
-	//transcode_with_filter();
+	transcode_with_filter();
 
 	// Without Filter
-	//transcode_without_filter();
+	transcode_without_filter();
 
 	// DICOM Converter
 	transcode_dcm();
