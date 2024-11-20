@@ -293,7 +293,7 @@ static int encode_and_write_frame(AVFrame* frame, unsigned int stream_index) {
     return ret;
 }
 
-int transcode_dcm()
+int transcode_dcm_without_filter()
 {
     int ret;
     AVPacket* packet = NULL;
